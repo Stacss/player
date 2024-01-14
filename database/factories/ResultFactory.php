@@ -21,8 +21,8 @@ class ResultFactory extends Factory
     public function definition()
     {
         return [
-            'member_id' => Member::factory(),
-            'milliseconds' => $this->faker->numberBetween(1, 10000),
+            'member_id' => $this->faker->boolean(10) ? $this->faker->numberBetween(1, 10000) : Member::factory(),
+            'milliseconds' => $this->faker->numberBetween(10, 10000),
         ];
     }
 }
