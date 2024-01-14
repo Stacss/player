@@ -5,12 +5,30 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Member;
 use App\Models\Result;
+use App\Services\RankService;
+use App\Services\TopResultsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 
 class ResultController extends Controller
 {
+    /**
+     * @var \App\Services\TopResultsService
+     */
+    protected $topResultsService;
+
+    /**
+     * Конструктор контроллера.
+     *
+     * @param \App\Services\TopResultsService $topResultsService Сервис для работы с топ-результатами.
+     */
+    public function __construct(TopResultsService $topResultsService)
+    {
+        $this->topResultsService = $topResultsService;
+    }
+
     /**
      * @OA\Post(
      *     path="/api/save-result",
@@ -80,6 +98,69 @@ class ResultController extends Controller
             return response()->json(['error' => $e->validator->errors()], 422);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Произошла ошибка при сохранении результата'], 500);
+        }
+    }
+    /**
+     * @OA\Get(
+     *     path="/api/top-results",
+     *     summary="Получить топ-10 результатов",
+     *     tags={"Results"},
+     *     @OA\Parameter(
+     *         name="email",
+     *         in="query",
+     *         description="Email участника",
+     *         @OA\Schema(type="string", format="email"),
+     *     ),
+     *     @OA\Response(
+     *         response="200",
+     *         description="Успешный ответ",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="data",
+     *                 @OA\Property(
+     *                     property="top",
+     *                     type="array",
+     *                     @OA\Items(
+     *                         @OA\Property(property="email", type="string"),
+     *                         @OA\Property(property="place", type="integer"),
+     *                         @OA\Property(property="milliseconds", type="integer"),
+     *                     ),
+     *                 ),
+     *                 @OA\Property(
+     *                     property="self",
+     *                     @OA\Property(property="email", type="string"),
+     *                     @OA\Property(property="place", type="integer"),
+     *                     @OA\Property(property="milliseconds", type="integer"),
+     *                 ),
+     *             ),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="Ошибка валидации",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="object"),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response="500",
+     *         description="Ошибка сервера",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string"),
+     *         ),
+     *     ),
+     * )
+     */
+    public function getTopResults(Request $request)
+    {
+        try {
+            $response = $this->topResultsService->getTopResults($request);
+
+            return response()->json($response);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Произошла ошибка при получении топ-10 результатов'], 500);
         }
     }
 }
